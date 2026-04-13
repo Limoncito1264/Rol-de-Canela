@@ -5,9 +5,10 @@ void funcionPrueba() {
     cout << "Funcion prueba";
 }
 
-int main {
+int main (){
     cout << "hola\n";
     cout << "Segunda prueba de enlace de git hub\n";
     funcionPrueba();
+    system("pause");
     return 0;
 }
