@@ -16,6 +16,7 @@ public:
 class Jugador {
 private:
     string nombre;
+    int hp;
     float velocidad;
     sf::RectangleShape body;
     sf::Vector2f posicion;
@@ -26,7 +27,7 @@ public:
 
 class knight : public Jugador {
 private:
-
+    
 public:
     void mover () {
         if (sf::Keyboard::isKeyPressed(W)) {
