@@ -24,6 +24,25 @@ public:
 
 };
 
+class knight : public Jugador {
+private:
+
+public:
+    void mover () {
+        if (sf::Keyboard::isKeyPressed(W)) {
+            posicion += [0,1];
+        }
+        if (sf::Keyboard::isKeyPressed(A)) {
+            posicion += [1,0];
+        }
+        if (sf::Keyboard::isKeyPressed(S)) {
+            posicion -= [0,1];
+        }
+        if (sf::Keyboard::isKeyPressed(D)) {
+            posicion += [1,0];
+        }
+    }
+}
 
 class Mapa {
 private:
