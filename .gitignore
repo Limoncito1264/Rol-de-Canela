@@ -1,0 +1,16 @@
+# Ejecutables
+*.exe
+
+# Archivos objeto
+*.o
+*.obj
+
+# Carpeta de build
+build/
+
+# Configuración de VS Code
+.vscode/
+
+# Temporales
+*.log
+*.tmp
