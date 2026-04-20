@@ -6,8 +6,164 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <SFML/Network.hpp>
-using namespace std;
+using namespace sf;
 
+enum class GameState 
+{
+    Menu,
+    NuevoJuego,
+    Continuar,
+    Jefes,
+    Jefe1,
+    Jefe2,
+    Jefe3,
+    Salir
+};
+
+class Boton
+{
+private:
+    Text texto;
+    RectangleShape figura;
+    Color colorHover;
+    Color colorNormal;
+
+public:
+    Boton(String text, Vector2f tamanio, Vector2f posicion, Color color,const Font& fuente) : figura(tamanio)
+    {
+        figura.setPosition(posicion);
+        figura.setFillColor(color);
+
+        texto.setFont(fuente);
+        texto.setString(text);
+        texto.setPosition(posicion);
+
+        colorHover = Color(
+            color.r + 50,
+            color.g + 50,
+            color.b + 50
+        );
+        colorNormal = color;
+    }
+    void draw(RenderWindow& window)
+    {
+        window.draw(figura);
+        window.draw(texto);
+    }
+    void hover(Vector2f posMouse)
+    {
+        if (figura.getGlobalBounds().contains(posMouse)) //getGlobalBounds te dice el area del boton, y contains te dice si el mouse esta adentro de esa area
+        {
+            figura.setFillColor(colorHover); // hover
+        }
+        else {
+            figura.setFillColor(colorNormal); // normal
+        }
+    }
+    bool clic(Vector2f mousePos)
+    {
+        return figura.getGlobalBounds().contains(mousePos);
+    }
+};
+
+class Menu
+{
+private:
+    Boton btnContinuar;
+    Boton btnNuevo;
+    Boton btnJefes;
+    Boton btnSalir;
+
+public:
+    Menu(const Font& fuente)
+        : btnContinuar("Continuar", { 200,50 }, { 100,100 }, Color::Blue, fuente),
+        btnNuevo("Nueva partida", { 200,50 }, { 100,200 }, Color::Blue, fuente),
+        btnJefes("Jefes", { 200,50 }, { 100,300 }, Color::Blue, fuente),
+        btnSalir("Salir", { 200,50 }, { 100,400 }, Color::Blue, fuente)
+    {}
+    void actualizacion(RenderWindow& window)
+    {
+        Vector2i mousePixel = Mouse::getPosition(window);
+        Vector2f mouse = window.mapPixelToCoords(mousePixel);
+
+        btnContinuar.hover(mouse);
+        btnNuevo.hover(mouse);
+        btnJefes.hover(mouse);
+        btnSalir.hover(mouse);
+    }
+    GameState handleEvent(const Event& event, const RenderWindow& window)
+    {
+        if (event.type == Event::MouseButtonPressed) {
+            Vector2f mouse = window.mapPixelToCoords(Mouse::getPosition(window));
+
+            if (btnNuevo.clic(mouse))
+                return GameState::NuevoJuego;
+            if (btnContinuar.clic(mouse))
+                return GameState::Continuar;
+            if (btnJefes.clic(mouse))
+                return GameState::Jefes;
+            if (btnSalir.clic(mouse))
+                return GameState::Salir;
+        }
+        return GameState::Menu;
+    }
+    void dibujar(RenderWindow& window)
+    {
+        btnContinuar.draw(window); 
+        btnNuevo.draw(window); 
+        btnJefes.draw(window); 
+        btnSalir.draw(window);
+    }
+};
+
+class Jefes
+{
+private:
+    Boton btnJefe1;
+    Boton btnJefe2;
+    Boton btnJefe3;
+    Boton btnVolver;
+public:
+    Jefes(const Font& fuente):
+        btnJefe1("Jefe 1", { 200,50 }, { 100,100 }, Color::Blue, fuente),
+        btnJefe2("Jefe 2", { 200,50 }, { 100,200 }, Color::Blue, fuente),
+        btnJefe3("Jefe 3", { 200,50 }, { 100,300 }, Color::Blue, fuente),
+        btnVolver("Volver", { 200,50 }, { 100,400 }, Color::Blue, fuente)
+    {}
+    void actualizacion(RenderWindow& window)
+    {
+        Vector2i mousePixel = Mouse::getPosition(window);
+        Vector2f mouse = window.mapPixelToCoords(mousePixel);
+
+        btnJefe1.hover(mouse);
+        btnJefe2.hover(mouse);
+        btnJefe3.hover(mouse);
+        btnVolver.hover(mouse);
+    }
+    GameState handleEvent(const Event& event, const RenderWindow& window)
+    {
+        if (event.type == Event::MouseButtonPressed) {
+            Vector2f mouse = window.mapPixelToCoords(Mouse::getPosition(window));
+
+            if (btnJefe1.clic(mouse))
+                return GameState::Jefe1;
+            if (btnJefe2.clic(mouse))
+                return GameState::Jefe2;
+            if (btnJefe3.clic(mouse))
+                return GameState::Jefe3;
+            if (btnVolver.clic(mouse))
+                return GameState::Menu;
+        }
+        return GameState::Jefes; 
+    }
+    void dibujar(RenderWindow& window)
+    {
+        btnJefe1.draw(window);
+        btnJefe2.draw(window);
+        btnJefe3.draw(window);
+        btnVolver.draw(window);
+    }
+};
 
 class Jugador {
 protected:
@@ -280,6 +436,79 @@ public:
 };
 
 int main (){
+
+       //ventana
+   RenderWindow ventana(VideoMode(1000, 600), "Proyecto", Style::Titlebar | Style::Close); 
+   Event ev;
+
+   Font fuente;
+   fuente.loadFromFile("Ldfcomicsans-jj7l.ttf");
+
+
+   Menu menu(fuente);
+   Jefes jefes(fuente); 
+
+   GameState Estado = GameState::Menu;
+
+   //loop del juego
+   while (ventana.isOpen())
+   {
+       //eventos
+       while (ventana.pollEvent(ev))
+       {
+           if (Estado == GameState::Menu)
+               Estado = menu.handleEvent(ev, ventana);
+           else if (Estado == GameState::Jefes) 
+               Estado = jefes.handleEvent(ev, ventana);
+           switch (ev.type)
+           {
+           case Event::Closed:
+               ventana.close();
+               break;
+           case Event::KeyPressed:
+               if (ev.key.code == Keyboard::Escape)
+               {
+                   ventana.close();
+                   break;
+               }
+           }
+       }
+
+       //Actualización
+       if (Estado == GameState::Menu)
+       {
+           menu.actualizacion(ventana);
+       }
+       else if (Estado == GameState::Salir)
+       {
+           ventana.close();
+       }
+       else if (Estado == GameState::Jefes)
+       {
+           jefes.actualizacion(ventana);
+       }
+
+       //Renderizacion
+       ventana.clear();
+
+       if (Estado == GameState::Menu)
+       {
+           menu.dibujar(ventana);
+       }
+       else if (Estado == GameState::NuevoJuego)
+       {
+           // aquí iría el juego
+       }
+       else if (Estado == GameState::Jefes)
+       {
+           jefes.dibujar(ventana);
+       }
+
+       ventana.display();
+   }
+
+   return 0;
+    /*
     //Ventana
    Juego juego;
 
@@ -296,4 +525,5 @@ int main (){
 
 
     return 0;
+    */
 }
