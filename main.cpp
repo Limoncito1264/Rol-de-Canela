@@ -154,9 +154,17 @@ public:
 
 class knight : public Jugador {
 private:
-    
+    /*
+    atributos hp, danio, forma, posicion
+    */
 public:
-   
+   mover() { //Mover arriba izquierda y derecha
+       
+   }
+    ataca () { //Atacar izquierda, derecha, arriba y abajo
+        
+    }
+
 };
 
 class Mapa {
