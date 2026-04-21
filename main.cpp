@@ -6,6 +6,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <SFML/Network.hpp>
+#include <optional>
+
 using namespace sf;
 
 enum class GameState 
@@ -29,12 +31,10 @@ private:
     Color colorNormal;
 
 public:
-    Boton(String text, Vector2f tamanio, Vector2f posicion, Color color,const Font& fuente) : figura(tamanio)
+    Boton(const String& text, Vector2f tamanio, Vector2f posicion, Color color, const Font& fuente) : texto(fuente), figura(tamanio), colorNormal(color) 
     {
         figura.setPosition(posicion);
         figura.setFillColor(color);
-
-        texto.setFont(fuente);
         texto.setString(text);
         texto.setPosition(posicion);
 
@@ -45,11 +45,13 @@ public:
         );
         colorNormal = color;
     }
+
     void draw(RenderWindow& window)
     {
         window.draw(figura);
         window.draw(texto);
     }
+
     void hover(Vector2f posMouse)
     {
         if (figura.getGlobalBounds().contains(posMouse)) //getGlobalBounds te dice el area del boton, y contains te dice si el mouse esta adentro de esa area
@@ -60,6 +62,7 @@ public:
             figura.setFillColor(colorNormal); // normal
         }
     }
+
     bool clic(Vector2f mousePos)
     {
         return figura.getGlobalBounds().contains(mousePos);
@@ -93,7 +96,7 @@ public:
     }
     GameState handleEvent(const Event& event, const RenderWindow& window)
     {
-        if (event.type == Event::MouseButtonPressed) {
+        if (event.is<Event::MouseButtonPressed>()) {
             Vector2f mouse = window.mapPixelToCoords(Mouse::getPosition(window));
 
             if (btnNuevo.clic(mouse))
@@ -142,7 +145,7 @@ public:
     }
     GameState handleEvent(const Event& event, const RenderWindow& window)
     {
-        if (event.type == Event::MouseButtonPressed) {
+        if (event.is<Event::MouseButtonPressed>()) {
             Vector2f mouse = window.mapPixelToCoords(Mouse::getPosition(window));
 
             if (btnJefe1.clic(mouse))
@@ -167,28 +170,28 @@ public:
 
 class Jugador {
 protected:
-    string nombre;
+    std::string nombre;
     int hp;
     float velocidad;
-    sf::Texture texturaUp;
-    sf::Texture texturaDown;
-    sf::Texture texturaLeft;
-    sf::Texture texturaRight;
-    sf::Sprite sprite;
+    Texture texturaUp;
+    Texture texturaDown;
+    Texture texturaLeft;
+    Texture texturaRight;
+    Sprite sprite;
 
-    sf::Vector2f posicionAnterior;
+    Vector2f posicionAnterior;
 
     void initVariables() {
         this->velocidad = 10.f;
     }
 
-    float escalaBase = 0.2f;
+    float escalaBase = 0.15f;
 
-    void cambiarVista(const sf::Texture& nuevaTextura) {
+    void cambiarVista(const Texture& nuevaTextura) {
         this->sprite.setTexture(nuevaTextura, true);
 
-        sf::Vector2u sizeRef = this->texturaDown.getSize();
-        sf::Vector2u sizeNueva = nuevaTextura.getSize();
+        Vector2u sizeRef = this->texturaDown.getSize();
+        Vector2u sizeNueva = nuevaTextura.getSize();
 
         float factorX = (static_cast<float>(sizeRef.x) / sizeNueva.x) * escalaBase;
         float factorY = (static_cast<float>(sizeRef.y) / sizeNueva.y) * escalaBase;
@@ -204,12 +207,12 @@ public:
         this->initVariables();
 
         if(!this->texturaUp.loadFromFile("jugador_w.png") || !this->texturaDown.loadFromFile("jugador_s.png") || !this->texturaLeft.loadFromFile("jugador_a.png") || !this->texturaRight.loadFromFile("jugador_d.png")) {
-            cout << "Error cargando imagen " << endl;
+            std::cout << "Error cargando imagen " << std::endl;
         }
 
         this->cambiarVista(this->texturaDown);
 
-        this->sprite.setPosition(sf::Vector2f(x, y));
+        this->sprite.setPosition(Vector2f(x, y));
 
     }
 
@@ -222,26 +225,26 @@ public:
         posicionAnterior = sprite.getPosition();
         //imputs del teclado
         //Izquierda
-        if(sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
+        if(Keyboard::isKeyPressed(Keyboard::Key::A)) {
             this->cambiarVista(this->texturaLeft);
             this->sprite.move({-this->velocidad, 0.f});
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
+        else if (Keyboard::isKeyPressed(Keyboard::Key::D)) {
             this->cambiarVista(this->texturaRight);
             this->sprite.move({this->velocidad, 0.f});
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
+        if (Keyboard::isKeyPressed(Keyboard::Key::W)) {
             this->cambiarVista(this->texturaUp);
             this->sprite.move({0.f, -this->velocidad});
         }
-        else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) {
+        else if (Keyboard::isKeyPressed(Keyboard::Key::S)) {
             this->cambiarVista(this->texturaDown);
             this->sprite.move({0.f, this->velocidad});
         }
 
     }
 
-    void updateWindowBoundsCollision(const sf::RenderTarget* target) {
+    void updateWindowBoundsCollision(const RenderTarget* target) {
 
         float windowWidth = static_cast<float>(target->getSize(). x);
         float windowHeight = static_cast<float>(target->getSize(). y);
@@ -261,21 +264,21 @@ public:
             this->sprite.setPosition({this->sprite.getGlobalBounds().position.x, target->getSize().y - this->sprite.getGlobalBounds().size.y});
     }
 
-    sf::FloatRect getBounds() const {
+    FloatRect getBounds() const {
         return this->sprite.getGlobalBounds();
     }
 
 
-    void update(const sf::RenderTarget* target) {
+    void update(const RenderTarget& target) {
 
         this->updateInput();
 
         //limites de la ventana (colision)
-        this->updateWindowBoundsCollision(target);
+        this->updateWindowBoundsCollision(&target);
 
     }
 
-    void render(sf::RenderTarget& target) {
+    void render(RenderTarget& target) {
         target.draw(this->sprite);
     }
 
@@ -284,24 +287,24 @@ public:
 
 class Objeto {
 protected:
-    const sf::Texture& textura;
-    sf::Sprite sprite;
+    const Texture& textura;
+    Sprite sprite;
 
 public:
 
-    Objeto(const sf::Texture& textura, sf::Vector2f posicion) : textura(textura), sprite(textura) {
+    Objeto(const Texture& textura, Vector2f posicion) : textura(textura), sprite(textura) {
         
         this->sprite.setPosition(posicion);
-        this->sprite.setScale(sf::Vector2f(0.5f, 0.5f));
+        this->sprite.setScale(Vector2f(0.5f, 0.5f));
 
     }
 
-    sf::FloatRect getBounds() const {
+    FloatRect getBounds() const {
         return sprite.getGlobalBounds();
     }
 
 
-    void render(sf::RenderTarget& target) {
+    void render(RenderTarget& target) {
         target.draw(sprite);
     }
 
@@ -314,10 +317,10 @@ private:
     atributos hp, danio, forma, posicion
     */
 public:
-   mover() { //Mover arriba izquierda y derecha
+   void mover() { //Mover arriba izquierda y derecha
        
    }
-    ataca () { //Atacar izquierda, derecha, arriba y abajo
+    void ataca () { //Atacar izquierda, derecha, arriba y abajo
         
     }
 
@@ -325,7 +328,7 @@ public:
 
 class Mapa {
 private:
-    std::vector<sf::RectangleShape> tiles;
+    std::vector<RectangleShape> tiles;
 public:
 
 };
@@ -334,73 +337,55 @@ public:
 class Juego {
 private:
     //Variables
-    string nombre;
-    sf::RenderWindow window;
-    sf::VideoMode videoMode;
+    std::string nombre;
+    RenderWindow* window; //Puntero
+    VideoMode videoMode;
 
-    sf::Texture fondoTex;
-    sf::Sprite fondo;
+    Texture fondoTex;
+    Sprite fondo;
 
-    map<string, sf::Texture> texturas;
+    std::map<std::string, Texture> texturas;
 
     Jugador jugador;
-    vector<unique_ptr<Objeto>> objetos;
+    std::vector<std::unique_ptr<Objeto>> objetos;
 
 
 
-    //Funcion privada para inicializar la ventana
+    //Funcion privada para inicializar la ventana a 60 frames
     void iniciarWindow() {
-        videoMode = sf::VideoMode({1280, 720});
-        window.create(videoMode, "Videojuego", sf::Style::Titlebar | sf::Style::Close);
-        window.setFramerateLimit(60);
+        this->window->setFramerateLimit(60);
     }
 
 public:
     //Constructores
-    Juego() : fondo(fondoTex) {
-        this->iniciarWindow();
+    Juego(RenderWindow* win) : fondo(fondoTex) {
+        this->window = win;
+        iniciarWindow();
 
         if (!this->fondoTex.loadFromFile("suelo.png")) {
-            cout << "Error cargando imagen " << endl;
+            std::cout << "Error cargando imagen " << std::endl;
         } 
 
         this->fondo.setTexture(this->fondoTex, true);
 
         if (!this->texturas["estanteria"].loadFromFile("estanteria.png")) {
-            cout << "Error cargando estanteria " << endl;
+            std::cout << "Error cargando estanteria " << std::endl;
         }
 
-        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], sf::Vector2f(700.f, 0.f)));
-        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], sf::Vector2f(500.f, 0.f)));
+        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], Vector2f(700.f, 0.f)));
+        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], Vector2f(500.f, 0.f)));
     }
 
     //Funciones
 
     bool running() const { //Funcion que checa si la ventana esta abierta
-        return this->window.isOpen();
-    }
-
-    void pollEvents() //Consulta de evento
-    {
-        
-        while (auto event = this->window.pollEvent()) //Diferentes acciones en caso de un evento
-        {
-            if (event->is<sf::Event::Closed>()) { //Si se apreta el boton de cerrar, la ventana se cierra
-                this->window.close();
-            }
-
-            if (auto key = event->getIf<sf::Event::KeyPressed>()) { //Si se preciona el escape la ventana se cierra
-                if (key->code == sf::Keyboard::Key::Escape)
-                    this->window.close();
-            }
-        }
+        return this->window->isOpen();
     }
 
     void update() //Updatear frame
     {
-        this->pollEvents();
 
-        this->jugador.update(&this->window);
+        this->jugador.update(*this->window);
 
         for (auto& obj : objetos) {
             if (jugador.getBounds().findIntersection(obj->getBounds())) {
@@ -413,20 +398,14 @@ public:
 
     void render() //Rendereizado del juego
     {
-        //Limpieza del frame antiguo
-        this->window.clear();
-
         //Dibujar fondo
-        this->window.draw(this->fondo);
+        this->window->draw(this->fondo);
 
         //Dibujar juego
         for (auto& obj : objetos) {
-            obj->render(this->window);
+            obj->render(*this->window);
         }
-        this->jugador.render(this->window);
-
-        //Desplegar frame en el juego
-        this->window.display();
+        this->jugador.render(*this->window);
     }
 
     //Destructores
@@ -435,44 +414,47 @@ public:
 
 };
 
-int main (){
+int main () {
 
-       //ventana
-   RenderWindow ventana(VideoMode(1000, 600), "Proyecto", Style::Titlebar | Style::Close); 
-   Event ev;
+    //ventana
+    RenderWindow ventana(VideoMode({1000, 600}), "Proyecto", Style::Titlebar | Style::Close);
 
-   Font fuente;
-   fuente.loadFromFile("Ldfcomicsans-jj7l.ttf");
+    Font fuente;
+    if (!fuente.openFromFile("Ldfcomicsans-jj7l.ttf")) {
+        return -1;
+    }
 
 
-   Menu menu(fuente);
-   Jefes jefes(fuente); 
+    Menu menu(fuente);
+    Jefes jefes(fuente); 
+    Juego juego(&ventana);
 
-   GameState Estado = GameState::Menu;
+    GameState Estado = GameState::Menu;
 
-   //loop del juego
-   while (ventana.isOpen())
-   {
+    //loop del juego
+    while (ventana.isOpen())
+    {
        //eventos
-       while (ventana.pollEvent(ev))
+       while (const std::optional evento = ventana.pollEvent())
        {
-           if (Estado == GameState::Menu)
-               Estado = menu.handleEvent(ev, ventana);
-           else if (Estado == GameState::Jefes) 
-               Estado = jefes.handleEvent(ev, ventana);
-           switch (ev.type)
-           {
-           case Event::Closed:
-               ventana.close();
-               break;
-           case Event::KeyPressed:
-               if (ev.key.code == Keyboard::Escape)
-               {
-                   ventana.close();
-                   break;
-               }
-           }
-       }
+            if (evento->is<Event::Closed>())
+                ventana.close();
+
+
+            if (const auto* keyPressed = evento->getIf<Event::KeyPressed>()) {
+                if (keyPressed->code == sf::Keyboard::Key::Escape)
+                    ventana.close();
+            }
+
+
+            if (Estado == GameState::Menu)
+                Estado = menu.handleEvent(*evento, ventana);
+            else if (Estado == GameState::Jefes) 
+                Estado = jefes.handleEvent(*evento, ventana);
+        }
+
+        if (Estado == GameState::Jefe1)
+            juego.update();
 
        //Actualización
        if (Estado == GameState::Menu)
@@ -491,39 +473,25 @@ int main (){
        //Renderizacion
        ventana.clear();
 
-       if (Estado == GameState::Menu)
-       {
-           menu.dibujar(ventana);
-       }
-       else if (Estado == GameState::NuevoJuego)
-       {
-           // aquí iría el juego
-       }
-       else if (Estado == GameState::Jefes)
-       {
-           jefes.dibujar(ventana);
-       }
+        if (Estado == GameState::Menu)
+        {
+            menu.dibujar(ventana);
+        }
+        else if (Estado == GameState::NuevoJuego)
+        {
+            // aquí iría el juego
+        }
+        else if (Estado == GameState::Jefes)
+        {
+            jefes.dibujar(ventana);
+        }
+        else if (Estado == GameState::Jefe1)
+        {
+            juego.render();
+        }
 
        ventana.display();
-   }
-
-   return 0;
-    /*
-    //Ventana
-   Juego juego;
-
-    while (juego.running())
-    {
-
-        //Actualizacion
-        juego.update();
-
-        //Renderizado
-        juego.render();
-
     }
 
-
     return 0;
-    */
 }
