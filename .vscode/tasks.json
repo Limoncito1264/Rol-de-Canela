@@ -12,6 +12,7 @@
                 "-L", "C:/SFML-3.0.2_mingw64/lib",
                 "-lsfml-graphics",
              "-lsfml-window",
+             "-lsfml-audio",
                 "-lsfml-system",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}.exe"

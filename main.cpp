@@ -577,7 +577,27 @@ int main () {
     Jefes jefes(fuente); 
     Juego juego(&ventana);
 
+    Music musicaMenu;
+    Music musicaJuego;
+
     GameState Estado = GameState::Menu;
+    GameState estadoAnterior = Estado;
+
+    if (!musicaMenu.openFromFile("menu.ogg")) {
+        std::cout << "Error cargando musica menu\n";
+    }
+
+    if (!musicaJuego.openFromFile("juego1.ogg")) {
+        std::cout << "Error cargando musica juego\n";
+    }
+
+    musicaMenu.setLooping(true);
+    musicaJuego.setLooping(true);
+
+    musicaMenu.setVolume(50);
+    musicaJuego.setVolume(50);
+
+    musicaMenu.play();
 
     //loop del juego
     while (ventana.isOpen())
@@ -599,6 +619,18 @@ int main () {
                 Estado = menu.handleEvent(*evento, ventana);
             else if (Estado == GameState::Jefes) 
                 Estado = jefes.handleEvent(*evento, ventana);
+        }
+        if (Estado != estadoAnterior) {
+            musicaMenu.stop();
+            musicaJuego.stop();
+
+            if (Estado == GameState::Menu || Estado == GameState::Jefes) {
+                musicaMenu.play();
+            }
+            else if (Estado == GameState::Jefe1) {
+                musicaJuego.play();
+            }
+            estadoAnterior = Estado;
         }
 
         if (Estado == GameState::Jefe1)
