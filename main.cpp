@@ -197,6 +197,11 @@ protected:
         float factorY = (static_cast<float>(sizeRef.y) / sizeNueva.y) * escalaBase;
 
         this->sprite.setScale({factorX, factorY});
+        FloatRect bounds = this->sprite.getLocalBounds();
+        this->sprite.setOrigin({
+            bounds.size.x / 2.f,
+            bounds.size.y / 2.f
+        });
     }
 
 
@@ -211,6 +216,11 @@ public:
         }
 
         this->cambiarVista(this->texturaDown);
+        FloatRect bounds = this->sprite.getLocalBounds();
+        this->sprite.setOrigin({
+            bounds.size.x / 2.f,
+            bounds.size.y / 2.f
+        });
 
         this->sprite.setPosition(Vector2f(x, y));
 
@@ -220,27 +230,37 @@ public:
         sprite.setPosition(posicionAnterior);
     }
 
+    void setPosition(Vector2f pos) {
+        this->sprite.setPosition(pos);
+    }
+
+    Vector2f getPosition() const {
+        return this->sprite.getPosition();
+    }
+
 
     void updateInput() {
-        posicionAnterior = sprite.getPosition();
+        Vector2f movimiento = {0.f, 0.f};
         //imputs del teclado
         //Izquierda
         if(Keyboard::isKeyPressed(Keyboard::Key::A)) {
-            this->cambiarVista(this->texturaLeft);
-            this->sprite.move({-this->velocidad, 0.f});
+            cambiarVista(texturaLeft);
+            movimiento.x -= velocidad;
         }
         else if (Keyboard::isKeyPressed(Keyboard::Key::D)) {
-            this->cambiarVista(this->texturaRight);
-            this->sprite.move({this->velocidad, 0.f});
+            cambiarVista(texturaRight);
+            movimiento.x += velocidad;
         }
         if (Keyboard::isKeyPressed(Keyboard::Key::W)) {
-            this->cambiarVista(this->texturaUp);
-            this->sprite.move({0.f, -this->velocidad});
+            cambiarVista(texturaUp);
+            movimiento.y -= velocidad;
         }
         else if (Keyboard::isKeyPressed(Keyboard::Key::S)) {
-            this->cambiarVista(this->texturaDown);
-            this->sprite.move({0.f, this->velocidad});
+            cambiarVista(texturaDown);
+            movimiento.y += velocidad;
         }
+
+        sprite.move(movimiento);
 
     }
 
@@ -249,19 +269,21 @@ public:
         float windowWidth = static_cast<float>(target->getSize(). x);
         float windowHeight = static_cast<float>(target->getSize(). y);
 
+        FloatRect bounds = this->sprite.getGlobalBounds();
+
         //Izquierda
-        if(this->sprite.getGlobalBounds().position.x <= 0.f)
-            this->sprite.setPosition({0.f,this->sprite.getGlobalBounds().position.y});
+        if(bounds.position.x <= 0.f)
+            sprite.setPosition({bounds.size.x / 2.f, sprite.getPosition().y});
         //Derecha
-        else if(this->sprite.getGlobalBounds().position.x + this->sprite.getGlobalBounds().size.x >= windowWidth)
-            this->sprite.setPosition({target->getSize().x - this->sprite.getGlobalBounds().size.x, this->sprite.getGlobalBounds().position.y});
+        else if(bounds.position.x + bounds.size.x >= windowWidth)
+            sprite.setPosition({windowWidth - bounds.size.x / 2.f, sprite.getPosition().y});
 
         //Arriba
-        if(this->sprite.getGlobalBounds().position.y <= 0.f)
-            this->sprite.setPosition({this->sprite.getGlobalBounds().position.x, 0.f});
+        if(bounds.position.y <= 120.f)
+            sprite.setPosition({sprite.getPosition().x, 120.f + bounds.size.y / 2.f});
         //Abajo
-        else if(this->sprite.getGlobalBounds().position.y + this->sprite.getGlobalBounds().size.y >= windowHeight)
-            this->sprite.setPosition({this->sprite.getGlobalBounds().position.x, target->getSize().y - this->sprite.getGlobalBounds().size.y});
+        else if(bounds.position.y + bounds.size.y >= windowHeight)
+            sprite.setPosition({sprite.getPosition().x, windowHeight - bounds.size.y / 2.f});
     }
 
     FloatRect getBounds() const {
@@ -271,10 +293,11 @@ public:
 
     void update(const RenderTarget& target) {
 
-        this->updateInput();
+        posicionAnterior = sprite.getPosition();
 
+        updateInput();
         //limites de la ventana (colision)
-        this->updateWindowBoundsCollision(&target);
+        updateWindowBoundsCollision(&target);
 
     }
 
@@ -285,22 +308,56 @@ public:
     ~Jugador() {}
 };
 
+enum class TipoObjeto {
+    Completo,
+    SoloAbajo
+};
+
 class Objeto {
 protected:
     const Texture& textura;
     Sprite sprite;
+    TipoObjeto tipo;
 
 public:
 
-    Objeto(const Texture& textura, Vector2f posicion) : textura(textura), sprite(textura) {
+    Objeto(const Texture& textura, Vector2f posicion, TipoObjeto tipo = TipoObjeto::Completo) : textura(textura), sprite(textura), tipo(tipo) {
         
         this->sprite.setPosition(posicion);
         this->sprite.setScale(Vector2f(0.5f, 0.5f));
 
     }
 
+    void setScale(float x, float y) {
+        this->sprite.setScale(Vector2f(x, y));
+    }
+
+    TipoObjeto getTipo() const {
+        return tipo;
+    }
+
     FloatRect getBounds() const {
         return sprite.getGlobalBounds();
+    }
+
+    FloatRect getCollisionBounds() const {
+        FloatRect b = sprite.getGlobalBounds();
+
+        float alturaColision = b.size.y * 0.25f;
+
+        return {
+            {b.position.x, b.position.y + b.size.y * 0.5f},
+            {b.size.x, b.size.y * 0.5f}
+        };
+    }
+
+    FloatRect getCollisionBoundsCompleto() const {
+        FloatRect b = sprite.getGlobalBounds();
+
+        return {
+            {b.position.x, b.position.y + b.size.y * 0.5f},
+            {b.size.x, b.size.y * 0.2f}
+        };
     }
 
 
@@ -342,7 +399,13 @@ private:
     VideoMode videoMode;
 
     Texture fondoTex;
-    Sprite fondo;
+    std::optional<Sprite> fondo;
+
+    Texture panelTex;
+    RectangleShape panelRecetas;
+
+    Texture recetaTex;
+    std::optional<Sprite> receta1;
 
     std::map<std::string, Texture> texturas;
 
@@ -358,22 +421,68 @@ private:
 
 public:
     //Constructores
-    Juego(RenderWindow* win) : fondo(fondoTex) {
+    Juego(RenderWindow* win) {
         this->window = win;
         iniciarWindow();
 
-        if (!this->fondoTex.loadFromFile("suelo.png")) {
-            std::cout << "Error cargando imagen " << std::endl;
+        if (this->fondoTex.loadFromFile("suelo.png")) {
+            this->fondo.emplace(this->fondoTex);
+            this->fondo->setTexture(this->fondoTex, true);
         } 
 
-        this->fondo.setTexture(this->fondoTex, true);
+
+        //Pared
+        if (!this->panelTex.loadFromFile("pared.png")) {
+            std::cout << "Error cargando pared" << std::endl;
+        }
+
+        this->panelRecetas.setSize(Vector2f(1000.f, 120.f));
+        this->panelRecetas.setPosition(Vector2f(0.f, 0.f));
+        this->panelRecetas.setTexture(&this->panelTex);
+
+        this->panelTex.setRepeated(true);
+        this->panelRecetas.setTextureRect({{0, 0}, {1000, 120}});
+
+        if (this->recetaTex.loadFromFile("receta.png")) {
+            this->receta1.emplace(this->recetaTex);
+            this->receta1->setPosition(Vector2f(50.f, 10.f));
+            this->receta1->setScale(Vector2f(0.5f, 0.5f));
+        } else {
+            std::cout << "No se encontro receta.png" << std::endl;
+        } 
+
+
 
         if (!this->texturas["estanteria"].loadFromFile("estanteria.png")) {
             std::cout << "Error cargando estanteria " << std::endl;
         }
+        if (!this->texturas["estanteria_estufa"].loadFromFile("estanteria_estufa.png")) {
+            std::cout << "Error cargando estanteria_estufa " << std::endl;
+        }
+        if (!this->texturas["estanteria_lado"].loadFromFile("estanteria_lado.png")) {
+            std::cout << "Error cargando estanteria_lado " << std::endl;
+        }
+        if (!this->texturas["estanteria_atras"].loadFromFile("estanteria_atras.png")) {
+            std::cout << "Error cargando estanteria_atras " << std::endl;
+        }
 
-        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], Vector2f(700.f, 0.f)));
-        this->objetos.push_back(std::make_unique<Objeto>(this->texturas["estanteria"], Vector2f(500.f, 0.f)));
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria"], Vector2f(700.f, 120.f), TipoObjeto::SoloAbajo));
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria"], Vector2f(500.f, 120.f), TipoObjeto::SoloAbajo));
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria"], Vector2f(100.f, 120.f), TipoObjeto::SoloAbajo));
+
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria_atras"], Vector2f(75.f, 483.f), TipoObjeto::Completo));
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria_atras"], Vector2f(621.f, 483.f), TipoObjeto::Completo));
+        this->objetos.push_back(std::make_unique<Objeto>(texturas["estanteria_atras"], Vector2f(348.f, 483.f), TipoObjeto::Completo));
+
+        auto estufa = std::make_unique<Objeto>(this->texturas["estanteria_estufa"], Vector2f(294.f, 122.f), TipoObjeto::SoloAbajo);
+        estufa->setScale(0.325f, 0.325f); 
+        this->objetos.push_back(std::move(estufa));
+
+        Vector2u size = this->window->getSize();
+        this->jugador.setPosition({
+            size.x / 2.f,
+            size.y / 2.f
+        });
     }
 
     //Funciones
@@ -384,28 +493,67 @@ public:
 
     void update() //Updatear frame
     {
+        Vector2f posAntes = jugador.getPosition();
 
-        this->jugador.update(*this->window);
+        jugador.update(*this->window);
 
         for (auto& obj : objetos) {
-            if (jugador.getBounds().findIntersection(obj->getBounds())) {
-                jugador.regresarPosicion();
+
+            FloatRect playerBounds = jugador.getBounds();
+            FloatRect objBounds = obj->getBounds();
+
+            if (obj->getTipo() == TipoObjeto::SoloAbajo) {
+                FloatRect col = obj->getCollisionBounds();
+
+                if (playerBounds.findIntersection(col).has_value()) {
+                    if (posAntes.y < objBounds.position.y) {
+                        jugador.setPosition(posAntes);
+                    }
+                }
+            } else {
+                FloatRect col = obj->getCollisionBoundsCompleto();
+
+                if (playerBounds.findIntersection(col).has_value()) {
+                    jugador.setPosition(posAntes);
+                }
             }
         }
-
-
     }
 
     void render() //Rendereizado del juego
     {
         //Dibujar fondo
-        this->window->draw(this->fondo);
-
-        //Dibujar juego
-        for (auto& obj : objetos) {
-            obj->render(*this->window);
+        if (this->fondo.has_value()) {
+            this->window->draw(*this->fondo);
         }
-        this->jugador.render(*this->window);
+
+        for (auto& obj : objetos) {
+            if (obj->getTipo() == TipoObjeto::Completo) {
+                if (jugador.getPosition().y > obj->getBounds().position.y) {
+                    obj->render(*this->window);
+                }
+            } 
+            else {
+                obj->render(*this->window);
+            }
+        }
+
+        jugador.render(*this->window);
+
+        for (auto& obj : objetos) {
+            if (obj->getTipo() == TipoObjeto::Completo) {
+                if (jugador.getPosition().y <= obj->getBounds().position.y) {
+                    obj->render(*this->window);
+                }
+            }
+        }
+
+        this->window->draw(this->panelRecetas);
+        
+        //dibujar recetas
+        if (this->receta1.has_value()) {
+            this->window->draw(*this->receta1);
+        }
     }
 
     //Destructores
