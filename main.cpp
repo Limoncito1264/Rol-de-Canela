@@ -371,7 +371,7 @@ public:
 class Knight : public Jugador {
 private:
     RectangleShape cuerpo;
-    Vector2f velocidadJefe2;
+    Vector2f velocidad2;
     float gravedad;
     float pisoY;
     float fuerzaSalto;
@@ -379,7 +379,7 @@ private:
 
 public:
     Knight(float x = 100.f, float y = 300.f)
-        : Jugador(x, y), velocidadJefe2(0.f, 0.f), gravedad(0.8f),
+        : Jugador(x, y), velocidad2(0.f, 0.f), gravedad(0.8f),
           pisoY(500.f), fuerzaSalto(-12.f), enSuelo(false)
     {
         cuerpo.setSize(Vector2f(40.f, 40.f));
@@ -404,28 +404,28 @@ public:
     }
 
     void updateJefe2(const RenderWindow& window) {
-        velocidadJefe2.x = 0.f;
+        velocidad2.x = 0.f;
 
         if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
-            velocidadJefe2.x = -5.f;
+            velocidad2.x = -5.f;
         }
         if (Keyboard::isKeyPressed(Keyboard::Key::D)) {
-            velocidadJefe2.x = 5.f;
+            velocidad2.x = 5.f;
         }
 
         if (Keyboard::isKeyPressed(Keyboard::Key::W) && enSuelo) {
-            velocidadJefe2.y = fuerzaSalto;
+            velocidad2.y = fuerzaSalto;
             enSuelo = false;
         }
 
-        velocidadJefe2.y += gravedad;
+        velocidad2.y += gravedad;
 
-        cuerpo.move(velocidadJefe2);
+        cuerpo.move(velocidad2);
 
         // colisión con piso
         if (cuerpo.getPosition().y + cuerpo.getSize().y >= pisoY) {
             cuerpo.setPosition(Vector2f(cuerpo.getPosition().x, pisoY - cuerpo.getSize().y));
-            velocidadJefe2.y = 0.f;
+            velocidad2.y = 0.f;
             enSuelo = true;
         }
 
