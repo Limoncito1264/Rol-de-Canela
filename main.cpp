@@ -368,27 +368,81 @@ public:
 
 };
 
-class knight : public Jugador {
+class Knight : public Jugador {
 private:
-    /*
-    atributos hp, danio, forma, posicion
-    */
+    RectangleShape cuerpo;
+    Vector2f velocidadJefe2;
+    float gravedad;
+    float pisoY;
+    float fuerzaSalto;
+    bool enSuelo;
+
 public:
-   void mover() { //Mover arriba izquierda y derecha
-       
-   }
-    void ataca () { //Atacar izquierda, derecha, arriba y abajo
-        
+    Knight(float x = 100.f, float y = 300.f)
+        : Jugador(x, y), velocidadJefe2(0.f, 0.f), gravedad(0.8f),
+          pisoY(500.f), fuerzaSalto(-12.f), enSuelo(false)
+    {
+        cuerpo.setSize(Vector2f(40.f, 40.f));
+        cuerpo.setFillColor(Color::Green);
+        cuerpo.setPosition(Vector2f(x, y));
     }
 
+    void setPiso(float y) {
+        pisoY = y;
+    }
+
+    Vector2f getPosition() const {
+        return cuerpo.getPosition();
+    }
+
+    FloatRect getBounds() const {
+        return cuerpo.getGlobalBounds();
+    }
+
+    void setPosition(Vector2f pos) {
+        cuerpo.setPosition(pos);
+    }
+
+    void updateJefe2(const RenderWindow& window) {
+        velocidadJefe2.x = 0.f;
+
+        if (Keyboard::isKeyPressed(Keyboard::Key::A)) {
+            velocidadJefe2.x = -5.f;
+        }
+        if (Keyboard::isKeyPressed(Keyboard::Key::D)) {
+            velocidadJefe2.x = 5.f;
+        }
+
+        if (Keyboard::isKeyPressed(Keyboard::Key::W) && enSuelo) {
+            velocidadJefe2.y = fuerzaSalto;
+            enSuelo = false;
+        }
+
+        velocidadJefe2.y += gravedad;
+
+        cuerpo.move(velocidadJefe2);
+
+        // colisión con piso
+        if (cuerpo.getPosition().y + cuerpo.getSize().y >= pisoY) {
+            cuerpo.setPosition(Vector2f(cuerpo.getPosition().x, pisoY - cuerpo.getSize().y));
+            velocidadJefe2.y = 0.f;
+            enSuelo = true;
+        }
+
+        // límites laterales
+        if (cuerpo.getPosition().x < 0.f) {
+            cuerpo.setPosition(Vector2f(0.f, cuerpo.getPosition().y));
+        }
+        if (cuerpo.getPosition().x + cuerpo.getSize().x > window.getSize().x) {
+            cuerpo.setPosition(Vector2f(window.getSize().x - cuerpo.getSize().x, cuerpo.getPosition().y));
+        }
+    }
+
+    void renderJefe2(RenderWindow& window) {
+        window.draw(cuerpo);
+    }
 };
 
-class Mapa {
-private:
-    std::vector<RectangleShape> tiles;
-public:
-
-};
 
 
 class Juego {
@@ -562,6 +616,33 @@ public:
 
 };
 
+class Juego2 {
+private:
+    RenderWindow* window;
+    Knight caballero;
+    RectangleShape piso;
+
+public:
+    Juego2(RenderWindow* win)
+        : window(win), caballero(100.f, 300.f)
+    {
+        piso.setSize(Vector2f(1000.f, 40.f));
+        piso.setFillColor(Color(80, 80, 80));
+        piso.setPosition(Vector2f(0.f, 500.f));
+
+        caballero.setPiso(500.f);
+    }
+
+    void update() {
+        caballero.updateJefe2(*window);
+    }
+
+    void render() {
+        window->draw(piso);
+        caballero.renderJefe2(*window);
+    }
+};
+
 int main () {
 
     //ventana
@@ -576,6 +657,7 @@ int main () {
     Menu menu(fuente);
     Jefes jefes(fuente); 
     Juego juego(&ventana);
+    Juego2 juego2(&ventana);
 
     Music musicaMenu;
     Music musicaJuego;
@@ -627,7 +709,7 @@ int main () {
             if (Estado == GameState::Menu || Estado == GameState::Jefes) {
                 musicaMenu.play();
             }
-            else if (Estado == GameState::Jefe1) {
+            else if (Estado == GameState::Jefe1 || Estado == GameState::Jefe2) {
                 musicaJuego.play();
             }
             estadoAnterior = Estado;
@@ -635,6 +717,8 @@ int main () {
 
         if (Estado == GameState::Jefe1)
             juego.update();
+        else if (Estado == GameState::Jefe2)
+            juego2.update();
 
        //Actualización
        if (Estado == GameState::Menu)
@@ -649,6 +733,7 @@ int main () {
        {
            jefes.actualizacion(ventana);
        }
+
 
        //Renderizacion
        ventana.clear();
@@ -668,6 +753,10 @@ int main () {
         else if (Estado == GameState::Jefe1)
         {
             juego.render();
+        }
+        else if (Estado == GameState::Jefe2) 
+        {
+            juego2.render();
         }
 
        ventana.display();
